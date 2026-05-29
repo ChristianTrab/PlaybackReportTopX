@@ -1,5 +1,4 @@
 using Jellyfin.Plugin.PlaybackReportingTopX.Services;
-using Jellyfin.Plugin.PlaybackReportingTopX;
 using MediaBrowser.Common.Api;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
