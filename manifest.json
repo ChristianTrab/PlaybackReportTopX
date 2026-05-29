@@ -8,12 +8,12 @@
     "category": "General",
     "versions": [
       {
-        "version": "0.0.0.2",
-        "changelog": "See the full changelog at [GitHub](https://github.com/ChristianTrab/PlaybackReportTopX/releases/tag/0.0.0.2)",
+        "version": "0.0.0.3",
+        "changelog": "See the full changelog at [GitHub](https://github.com/ChristianTrab/PlaybackReportTopX/releases/tag/0.0.0.3)",
         "targetAbi": "10.11.0.0",
-        "sourceUrl": "https://github.com/ChristianTrab/PlaybackReportTopX/releases/download/0.0.0.2/jellyfin-plugin-playbackreporting-topx-0.0.0.2.zip",
-        "checksum": "8c91a837a771ee0442ae91270611991b",
-        "timestamp": "2026-05-29T22:38:27Z"
+        "sourceUrl": "https://github.com/ChristianTrab/PlaybackReportTopX/releases/download/0.0.0.3/jellyfin-plugin-playbackreporting-topx-0.0.0.3.zip",
+        "checksum": "55f64b4d2841d2d5c1d0afbd77b6c497",
+        "timestamp": "2026-05-29T22:54:35Z"
       }
     ]
   }
