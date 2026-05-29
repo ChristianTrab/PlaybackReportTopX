@@ -97,7 +97,9 @@ public class TopXCollectionService : ITopXCollectionService
             return null;
         }
 
-        return collectionsFolder.GetChildren(null, true)
+        // Scheduled tasks have no user context; use Children directly (same as Jellyfin's
+        // CleanupCollectionAndPlaylistPathsTask) instead of GetChildren, which requires a user.
+        return collectionsFolder.Children
             .OfType<BoxSet>()
             .FirstOrDefault(collection => string.Equals(collection.Name, collectionName, StringComparison.OrdinalIgnoreCase));
     }
