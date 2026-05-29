@@ -1,0 +1,145 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore Jellyfin.Plugin.PlaybackReportingTopX.sln
+
+      - name: Check formatting
+        run: dotnet format Jellyfin.Plugin.PlaybackReportingTopX.sln --verify-no-changes
+
+      - name: Build (strict)
+        run: dotnet build Jellyfin.Plugin.PlaybackReportingTopX.sln --configuration Release --no-restore /p:TreatWarningsAsErrors=true
+
+      - name: Run unit tests
+        run: dotnet test Jellyfin.Plugin.PlaybackReportingTopX.Tests/Jellyfin.Plugin.PlaybackReportingTopX.Tests.csproj --configuration Release --no-build
+
+  release:
+    runs-on: ubuntu-latest
+    needs: validate
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get next version
+        id: get_version
+        run: |
+          LATEST=$(git tag --sort=-v:refname | head -1 | sed 's/^v//')
+          if [ -z "$LATEST" ]; then
+            LATEST="0.0.0.0"
+          fi
+          NEXT=$(echo "$LATEST" | awk -F. '{$NF=$NF+1; print}' OFS=.)
+          echo "VERSION=$NEXT" >> $GITHUB_OUTPUT
+          echo "Next version: $NEXT"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore dependencies
+        run: dotnet restore Jellyfin.Plugin.PlaybackReportingTopX/Jellyfin.Plugin.PlaybackReportingTopX.csproj
+
+      - name: Build release
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          dotnet build Jellyfin.Plugin.PlaybackReportingTopX/Jellyfin.Plugin.PlaybackReportingTopX.csproj --configuration Release --no-restore \
+            /p:TreatWarningsAsErrors=true \
+            /p:Version=$VERSION \
+            /p:AssemblyVersion=$VERSION \
+            /p:FileVersion=$VERSION
+
+      - name: Create release zip
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          mkdir -p release
+          find Jellyfin.Plugin.PlaybackReportingTopX -path "*/bin/Release/net9.0/*.dll" -exec cp {} release/ \;
+          cd release
+          zip -r ../jellyfin-plugin-playbackreporting-topx-${VERSION}.zip .
+
+      - name: Calculate checksum
+        id: calculate_checksum
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          CHECKSUM=$(md5sum jellyfin-plugin-playbackreporting-topx-${VERSION}.zip | awk '{ print $1 }')
+          echo "CHECKSUM=$CHECKSUM" >> $GITHUB_OUTPUT
+
+      - name: Generate manifest.json
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          CHECKSUM=${{ steps.calculate_checksum.outputs.CHECKSUM }}
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          cat > manifest.json << EOF
+          [
+            {
+              "guid": "c4e8a2f1-6d3b-4a7e-9f5c-1b2d3e4f5a6b",
+              "name": "Playback Reporting Top X",
+              "overview": "Creates Top X collections for most watched movies and series from Playback Reporting data.",
+              "description": "Reads watch history from the Playback Reporting plugin database and maintains Jellyfin collections for the most watched movies and TV series.",
+              "owner": "ChristianTrab",
+              "category": "General",
+              "versions": [
+                {
+                  "version": "${VERSION}",
+                  "changelog": "See the full changelog at [GitHub](https://github.com/ChristianTrab/PlaybackReportTopX/releases/tag/${VERSION})",
+                  "targetAbi": "10.11.0.0",
+                  "sourceUrl": "https://github.com/ChristianTrab/PlaybackReportTopX/releases/download/${VERSION}/jellyfin-plugin-playbackreporting-topx-${VERSION}.zip",
+                  "checksum": "${CHECKSUM}",
+                  "timestamp": "${TIMESTAMP}"
+                }
+              ]
+            }
+          ]
+          EOF
+
+      - name: Create tag and GitHub Release
+        run: |
+          VERSION=${{ steps.get_version.outputs.VERSION }}
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "$VERSION"
+          git push origin "$VERSION"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          files: |
+            jellyfin-plugin-playbackreporting-topx-${{ steps.get_version.outputs.VERSION }}.zip
+            manifest.json
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update manifest on main
+        run: |
+          git fetch origin main
+          git checkout main
+          git add manifest.json
+          git commit -m "chore: update manifest for ${{ steps.get_version.outputs.VERSION }}" || true
+          git push origin main
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

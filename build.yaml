@@ -1,0 +1,16 @@
+---
+name: "Playback Reporting Top X"
+guid: "c4e8a2f1-6d3b-4a7e-9f5c-1b2d3e4f5a6b"
+version: 1
+targetAbi: "10.11.0.0"
+framework: net9.0
+owner: "jellyfin"
+overview: "Creates Top X collections for most watched movies and series from Playback Reporting data."
+description: >
+  Reads watch history from the Playback Reporting plugin database and maintains
+  Jellyfin collections for the most watched movies and TV series.
+category: "General"
+artifacts:
+  - "Jellyfin.Plugin.PlaybackReportingTopX.dll"
+changelog: |-
+  - Initial release

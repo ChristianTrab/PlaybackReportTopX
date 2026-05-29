@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>Jellyfin.Plugin.PlaybackReportingTopX</RootNamespace>
+    <AssemblyName>Jellyfin.Plugin.PlaybackReportingTopX</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Jellyfin.Plugin.PlaybackReportingTopX.Core\Jellyfin.Plugin.PlaybackReportingTopX.Core.csproj" />
+    <PackageReference Include="Jellyfin.Controller" Version="10.11.9" />
+    <PackageReference Include="Jellyfin.Model" Version="10.11.9" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="9.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Configuration\configPage.html" />
+  </ItemGroup>
+
+</Project>

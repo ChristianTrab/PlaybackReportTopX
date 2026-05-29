@@ -1,0 +1,121 @@
+<div id="PlaybackReportingTopXConfigPage" data-role="page" class="page type-interior pluginConfigurationPage" data-require="emby-input,emby-button,emby-checkbox">
+    <div class="content-primary">
+        <div class="verticalSection">
+            <div id="dependencyWarning" style="display: none; padding: 1em; margin-bottom: 1em; border: 1px solid #c0392b; border-radius: 4px; background: rgba(192, 57, 43, 0.15);">
+                <strong>Playback Reporting required</strong>
+                <div id="dependencyWarningText" style="margin-top: 0.5em;"></div>
+            </div>
+
+            <form id="PlaybackReportingTopXConfigForm">
+                <div class="selectContainer">
+                    <label class="selectLabel" for="TopCount">Number of items per collection</label>
+                    <input id="TopCount" name="TopCount" type="number" min="1" max="100" is="emby-input" />
+                    <div class="fieldDescription">Default: 10</div>
+                </div>
+
+                <div class="selectContainer">
+                    <label class="selectLabel" for="DaysToLookBack">Days of playback history</label>
+                    <input id="DaysToLookBack" name="DaysToLookBack" type="number" min="1" max="3650" is="emby-input" />
+                    <div class="fieldDescription">Default: 30</div>
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="MoviesCollectionName">Movies collection name</label>
+                    <input id="MoviesCollectionName" name="MoviesCollectionName" type="text" maxlength="256" is="emby-input" />
+                </div>
+
+                <div class="inputContainer">
+                    <label class="inputLabel inputLabelUnfocused" for="SeriesCollectionName">Series collection name</label>
+                    <input id="SeriesCollectionName" name="SeriesCollectionName" type="text" maxlength="256" is="emby-input" />
+                </div>
+
+                <label class="checkboxContainer">
+                    <input id="UpdateMoviesCollection" name="UpdateMoviesCollection" type="checkbox" is="emby-checkbox" />
+                    <span>Update movies collection</span>
+                </label>
+
+                <label class="checkboxContainer">
+                    <input id="UpdateSeriesCollection" name="UpdateSeriesCollection" type="checkbox" is="emby-checkbox" />
+                    <span>Update series collection</span>
+                </label>
+
+                <div>
+                    <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+                        <span>Save</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var PlaybackReportingTopXConfig = {
+            pluginUniqueId: 'c4e8a2f1-6d3b-4a7e-9f5c-1b2d3e4f5a6b'
+        };
+
+        function clampInteger(value, min, max, fallback) {
+            var parsed = parseInt(value, 10);
+            if (isNaN(parsed)) {
+                return fallback;
+            }
+
+            return Math.min(max, Math.max(min, parsed));
+        }
+
+        function loadDependencyWarning() {
+            ApiClient.ajax({
+                type: 'GET',
+                url: ApiClient.getUrl('PlaybackReportingTopX/DependencyStatus'),
+                dataType: 'json'
+            }).then(function (status) {
+                var warning = document.querySelector('#dependencyWarning');
+                var warningText = document.querySelector('#dependencyWarningText');
+
+                if (!status.isReady) {
+                    warning.style.display = 'block';
+                    warningText.textContent = status.message;
+                } else {
+                    warning.style.display = 'none';
+                    warningText.textContent = '';
+                }
+            });
+        }
+
+        document.querySelector('#PlaybackReportingTopXConfigPage')
+            .addEventListener('pageshow', function () {
+                Dashboard.showLoadingMsg();
+                loadDependencyWarning();
+
+                ApiClient.getPluginConfiguration(PlaybackReportingTopXConfig.pluginUniqueId).then(function (config) {
+                    document.querySelector('#TopCount').value = config.TopCount || 10;
+                    document.querySelector('#DaysToLookBack').value = config.DaysToLookBack || 30;
+                    document.querySelector('#MoviesCollectionName').value = config.MoviesCollectionName || 'Top 10 Movies';
+                    document.querySelector('#SeriesCollectionName').value = config.SeriesCollectionName || 'Top 10 Series';
+                    document.querySelector('#UpdateMoviesCollection').checked = config.UpdateMoviesCollection !== false;
+                    document.querySelector('#UpdateSeriesCollection').checked = config.UpdateSeriesCollection !== false;
+                    Dashboard.hideLoadingMsg();
+                });
+            });
+
+        document.querySelector('#PlaybackReportingTopXConfigForm')
+            .addEventListener('submit', function (e) {
+                e.preventDefault();
+                Dashboard.showLoadingMsg();
+
+                ApiClient.getPluginConfiguration(PlaybackReportingTopXConfig.pluginUniqueId).then(function (config) {
+                    config.TopCount = clampInteger(document.querySelector('#TopCount').value, 1, 100, 10);
+                    config.DaysToLookBack = clampInteger(document.querySelector('#DaysToLookBack').value, 1, 3650, 30);
+                    config.MoviesCollectionName = document.querySelector('#MoviesCollectionName').value.trim().substring(0, 256);
+                    config.SeriesCollectionName = document.querySelector('#SeriesCollectionName').value.trim().substring(0, 256);
+                    config.UpdateMoviesCollection = document.querySelector('#UpdateMoviesCollection').checked;
+                    config.UpdateSeriesCollection = document.querySelector('#UpdateSeriesCollection').checked;
+
+                    ApiClient.updatePluginConfiguration(PlaybackReportingTopXConfig.pluginUniqueId, config).then(function (result) {
+                        Dashboard.processPluginConfigurationUpdateResult(result);
+                    });
+                });
+
+                return false;
+            });
+    </script>
+</div>
