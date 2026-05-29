@@ -1,5 +1,6 @@
 using MediaBrowser.Controller.Collections;
 using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using Microsoft.Extensions.Logging;
 
@@ -81,10 +82,22 @@ public class TopXCollectionService : ITopXCollectionService
         cancellationToken.ThrowIfCancellationRequested();
         await _collectionManager.AddToCollectionAsync(collection.Id, validItemIds).ConfigureAwait(false);
 
-        _logger.LogInformation(
-            "Updated collection {CollectionName} with {ItemCount} items.",
-            collectionName,
-            validItemIds.Count);
+        var seriesCount = validItemIds.Count(id => _libraryManager.GetItemById(id) is Series);
+
+        if (seriesCount > 0 && seriesCount == validItemIds.Count)
+        {
+            _logger.LogInformation(
+                "Updated collection {CollectionName} with {SeriesCount} series. Jellyfin may show a higher item count because it includes episodes inside those series.",
+                collectionName,
+                seriesCount);
+        }
+        else
+        {
+            _logger.LogInformation(
+                "Updated collection {CollectionName} with {ItemCount} items.",
+                collectionName,
+                validItemIds.Count);
+        }
 
         return true;
     }

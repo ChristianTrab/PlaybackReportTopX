@@ -171,6 +171,7 @@ public class PlaybackReportingDataService : IPlaybackReportingDataService
         }
 
         var seriesStats = new Dictionary<Guid, (int PlayCount, long TotalDuration)>();
+        var unmappedEpisodeRows = 0;
 
         foreach (var stat in rawStats)
         {
@@ -178,6 +179,7 @@ public class PlaybackReportingDataService : IPlaybackReportingDataService
 
             if (_libraryManager.GetItemById(stat.ItemId) is not Episode episode || episode.SeriesId == Guid.Empty)
             {
+                unmappedEpisodeRows++;
                 continue;
             }
 
@@ -193,11 +195,29 @@ public class PlaybackReportingDataService : IPlaybackReportingDataService
             }
         }
 
-        return seriesStats
+        if (unmappedEpisodeRows > 0)
+        {
+            _logger.LogDebug(
+                "Skipped {UnmappedRows} episode playback rows that could not be mapped to a library series.",
+                unmappedEpisodeRows);
+        }
+
+        var topSeriesIds = seriesStats
             .OrderByDescending(pair => pair.Value.PlayCount)
             .ThenByDescending(pair => pair.Value.TotalDuration)
             .Take(limit)
             .Select(pair => pair.Key)
             .ToList();
+
+        if (topSeriesIds.Count < limit)
+        {
+            _logger.LogInformation(
+                "Found {SeriesCount} ranked series in the last {Days} days (requested top {Limit}).",
+                topSeriesIds.Count,
+                days,
+                limit);
+        }
+
+        return topSeriesIds;
     }
 }

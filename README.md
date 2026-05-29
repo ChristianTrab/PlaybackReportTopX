@@ -10,6 +10,7 @@ This plugin creates and maintains collections of the most watched movies and TV 
 - Creates separate collections named **Top 10 Movies** and **Top 10 Series** (both configurable)
 - For movies, ranks by total play count (tie-breaker: total watch duration)
 - For series, aggregates episode plays to their parent series and ranks by total play count
+- Series collections store **series** as members; Jellyfin may still display a much larger item count because it recursively includes episodes inside those series
 - Keeps collections up to date by replacing items that have fallen out of the top list
 - Validates that Playback Reporting is installed and active before updating collections
 - Shows a warning banner on the plugin settings page when Playback Reporting is missing, inactive, or not initialized
@@ -41,6 +42,14 @@ You can also install from a GitHub release zip or build from source (see [Buildi
 1. Your **Top 10 Movies** and **Top 10 Series** collections should now appear in your library
 
 The scheduled task also runs automatically every day at 2:00 AM. If Playback Reporting is not ready, the task logs a warning and skips the update until the dependency is available.
+
+### Series collection item counts
+
+The plugin adds **series** to the series collection, not individual episodes. If the log says `Updated collection "Top 10 Series" with 6 series`, the collection contains six shows.
+
+Jellyfin may still report a much higher number (for example 260 items) when you browse or inspect the collection, because Jellyfin recursively counts episodes inside those series. That behavior comes from Jellyfin itself, not from extra items being added by this plugin.
+
+If fewer than your configured top count are added, only that many series had matching playback activity in the selected time window and could be mapped to library series.
 
 ## Configuration
 
